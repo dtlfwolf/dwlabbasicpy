@@ -1,0 +1,51 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dwlabbasicpy"
+version = "0.20.0"
+description = "DW-Lab Basic Python Services"
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [
+    { name = "Detlef Wolf", email = "detlef.wolf@dw-lab.de" }
+]
+requires-python = ">=3.8"
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Software Development :: Libraries",
+]
+dependencies = [
+  "PyYAML>=5.1",
+  "requests"
+]
+
+[project.urls]
+Homepage = "https://github.com/dtlfwolf/dwlab-basicpy"
+
+[project.optional-dependencies]
+dev = [
+  "build",
+  "pytest",
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["dwlabbasicpy*"]
+exclude = ["build*", "debian*"]
+
+[tool.setuptools.package-data]
+dwlabbasicpy = ["etc/*.yaml"]

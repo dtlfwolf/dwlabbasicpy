@@ -1,0 +1,46 @@
+version: 1
+disable_existing_loggers: False
+formatters:
+  simple:
+    format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  detailed:
+    format: "%(asctime)s - %(name)s - %(levelname)s - %(module)s - %(message)s"
+
+handlers:
+  console:
+    class: logging.StreamHandler
+    level: DEBUG
+    formatter: detailed
+    stream: ext://sys.stdout
+
+  syslog:
+    class: logging.handlers.SysLogHandler
+    level: INFO
+    formatter: detailed
+    address: "/dev/log"
+
+loggers:
+  dwlabbasicpy.dwlabLogger:
+    level: INFO
+    handlers: [console, syslog]
+    propagate: no
+  dwlabbasicpy.dwlabSettings:
+    level: INFO
+    handlers: [console, syslog]
+    propagate: no
+  dwlabbasicpy.dwlabRuntimeEnvironment:
+    level: INFO
+    handlers: [console, syslog]
+    propagate: no
+  dwlabbasicpy.dwlabSetup:
+    level: INFO
+    handlers: [console, syslog]
+    propagate: no
+  dwlabbasicpy.dwlabObjectHandler:
+    level: INFO
+    handlers: [console, syslog]
+    propagate: no
+
+root:
+  level: INFO
+  handlers: [console, syslog]
