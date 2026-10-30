@@ -2,9 +2,9 @@ version: 1
 disable_existing_loggers: False
 formatters:
   simple:
-    format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    (): dwlabbasicpy.DwlabLogFormatter
   detailed:
-    format: "%(asctime)s - %(name)s - %(levelname)s - %(module)s - %(message)s"
+    (): dwlabbasicpy.DwlabLogFormatter
 
 handlers:
   console:

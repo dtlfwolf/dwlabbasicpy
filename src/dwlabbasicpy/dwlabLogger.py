@@ -5,6 +5,8 @@ from pathlib import Path
 
 import yaml
 
+from .dwlabLogging import DwlabLogFormatter
+
 
 DEFAULT_CONFIG_FILENAME = "logging.yaml"
 DEFAULT_SYSTEM_CONFIG_ROOT = Path("/etc/dwlab")
@@ -34,12 +36,17 @@ class DwlabLoggerConfiguration:
         config_path=None,
         default_filename=DEFAULT_CONFIG_FILENAME,
         default_level=logging.INFO,
+        *,
+        timezone="UTC",
     ):
-        """Initialize logging configuration lookup parameters."""
+        """Initialize lookup parameters and the built-in formatter's IANA timezone."""
         self.package_name = package_name
         self.config_path = config_path
         self.default_filename = default_filename
         self.default_level = default_level
+        self.timezone = timezone
+        # Validate before attempting configuration; invalid zones must not fall back silently.
+        DwlabLogFormatter(timezone=timezone)
 
     def resolve_package_name(self):
         """Determine the DW-Lab package identifier for the current caller.
@@ -134,16 +141,24 @@ class DwlabLoggerConfiguration:
         """Load a YAML logging configuration from the given file path."""
         with path.open("r", encoding="utf-8") as file_handle:
             config = yaml.safe_load(file_handle) or {}
+        packaged = Path(__file__).resolve().parent / "etc" / DEFAULT_CONFIG_FILENAME
+        if path.resolve() == packaged.resolve():
+            for formatter in config.get("formatters", {}).values():
+                if formatter.get("()") == "dwlabbasicpy.DwlabLogFormatter":
+                    formatter["timezone"] = self.timezone
         logging.config.dictConfig(config)
 
     def configure_fallback(self):
         """Apply a minimal fallback configuration when no YAML file can be used."""
-        logging.basicConfig(level=self.default_level)
+        handler = logging.StreamHandler()
+        handler.setFormatter(DwlabLogFormatter(timezone=self.timezone))
+        logging.basicConfig(level=self.default_level, handlers=[handler])
         return None
 
     def setup(self):
         """Configure Python logging from the first valid DW-Lab configuration source.
 
+        Built-in formatting defaults to UTC. Customer YAML remains authoritative.
         ``package_name`` is the canonical DW-Lab package or application identifier
         used to resolve ``/etc/dwlab/<package_name>/logging.yaml``.
         """
@@ -185,11 +200,18 @@ def setup_logging(
     config_path=None,
     default_filename=DEFAULT_CONFIG_FILENAME,
     default_level=logging.INFO,
+    *,
+    timezone="UTC",
 ):
-    """Compatibility wrapper for OO-based DW-Lab logging setup."""
+    """Configure logging explicitly, defaulting built-in formatting to UTC.
+
+    ``timezone`` accepts an IANA name and does not override customer YAML.
+    Existing positional arguments remain compatible.
+    """
     return DwlabLoggerConfiguration(
         package_name=package_name,
         config_path=config_path,
         default_filename=default_filename,
         default_level=default_level,
+        timezone=timezone,
     ).setup()

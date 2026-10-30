@@ -132,3 +132,54 @@ def test_candidate_config_paths_handles_short_stack(monkeypatch):
     assert candidates[-1] == (
         Path(dwlabLogger.__file__).resolve().parent / "etc" / "logging.yaml"
     )
+
+
+@pytest.mark.parametrize("timezone", ["UTC", "Europe/Berlin"])
+def test_packaged_configuration_uses_selected_timezone(monkeypatch, timezone):
+    applied = []
+    monkeypatch.setattr(dwlabLogger.logging.config, "dictConfig", applied.append)
+    config = dwlabLogger.DwlabLoggerConfiguration(timezone=timezone)
+    config.load_logging_config(
+        Path(dwlabLogger.__file__).resolve().parent / "etc" / "logging.yaml"
+    )
+    for formatter in applied[0]["formatters"].values():
+        assert formatter["()"] == "dwlabbasicpy.DwlabLogFormatter"
+        assert formatter["timezone"] == timezone
+
+
+def test_customer_formatter_is_not_rewritten(monkeypatch, tmp_path):
+    applied = []
+    monkeypatch.setattr(dwlabLogger.logging.config, "dictConfig", applied.append)
+    path = tmp_path / "logging.yaml"
+    path.write_text(
+        "version: 1\nformatters:\n  customer:\n"
+        "    (): dwlabbasicpy.DwlabLogFormatter\n    timezone: Asia/Tokyo\n"
+    )
+    dwlabLogger.DwlabLoggerConfiguration(timezone="Europe/Berlin").load_logging_config(path)
+    assert applied[0]["formatters"]["customer"]["timezone"] == "Asia/Tokyo"
+    assert "timezone: Asia/Tokyo" in path.read_text()
+
+
+@pytest.mark.parametrize("timezone, suffix", [("UTC", "Z"), ("Europe/Berlin", "+01:00")])
+def test_fallback_handler_uses_selected_timezone(monkeypatch, timezone, suffix):
+    applied = []
+    monkeypatch.setattr(dwlabLogger.logging, "basicConfig", lambda **kw: applied.append(kw))
+    dwlabLogger.DwlabLoggerConfiguration(timezone=timezone).configure_fallback()
+    record = dwlabLogger.logging.LogRecord("test", 20, "", 0, "ready", (), None)
+    record.created = 1793278805.359
+    formatter = applied[0]["handlers"][0].formatter
+    assert formatter.format(record).split()[0].endswith(suffix)
+
+
+def test_setup_wrapper_forwards_timezone(monkeypatch):
+    monkeypatch.setattr(dwlabLogger.DwlabLoggerConfiguration, "setup", lambda self: self.timezone)
+    assert dwlabLogger.setup_logging() == "UTC"
+    assert dwlabLogger.setup_logging(timezone="Asia/Tokyo") == "Asia/Tokyo"
+
+
+def test_invalid_setup_timezone_does_not_apply_configuration(monkeypatch):
+    applied = []
+    monkeypatch.setattr(dwlabLogger.logging.config, "dictConfig", applied.append)
+    with pytest.raises(ValueError, match="Invalid logging timezone"):
+        dwlabLogger.setup_logging(timezone="Not/AZone")
+    assert not applied

@@ -7,9 +7,10 @@ PACKAGE_NAME := dwlabbasicpy
 PYTHON ?= python3
 BUILD_ARTIFACTS ?= $(ROOT)/dist
 WHEEL_OUTPUT_DIR ?= $(BUILD_ARTIFACTS)/wheels
-PACKAGE_VERSION := $(shell awk -F'"' '/^version = / { print $$2; exit }' pyproject.toml)
-WHEEL_FILE := $(WHEEL_OUTPUT_DIR)/$(PACKAGE_NAME)-$(PACKAGE_VERSION)-py3-none-any.whl
-WHEEL_MANIFEST := $(WHEEL_OUTPUT_DIR)/$(PACKAGE_NAME)-$(PACKAGE_VERSION).sha256
+# A parent DEB build may pass PACKAGE_VERSION; wheels use Python metadata.
+WHEEL_VERSION := $(shell awk -F'"' '/^version = / { print $$2; exit }' pyproject.toml)
+WHEEL_FILE := $(WHEEL_OUTPUT_DIR)/$(PACKAGE_NAME)-$(WHEEL_VERSION)-py3-none-any.whl
+WHEEL_MANIFEST := $(WHEEL_OUTPUT_DIR)/$(PACKAGE_NAME)-$(WHEEL_VERSION).sha256
 INSTALL_TARGET ?=
 
 .PHONY: help build wheel rebuild-wheel clean-wheel clean inspect install
